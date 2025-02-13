@@ -2,24 +2,47 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { glob } from 'glob'
 import { spawn } from 'node:child_process'
+import { Octokit } from '@octokit/rest'
 
-// Utility to get changed files from GITHUB_EVENT_PATH
-function getChangedFiles () {
-  const eventPath = process.env.GITHUB_EVENT_PATH
+// Initialize Octokit (you'll need a GitHub token)
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+async function getChangedFiles() {
+  const eventPath = process.env.GITHUB_EVENT_PATH;
 
   if (!eventPath || !fs.existsSync(eventPath)) {
-    throw new Error('Cannot find GITHUB_EVENT_PATH to determine changed files.')
+    throw new Error('Cannot find GITHUB_EVENT_PATH to determine changed files.');
   }
 
-  const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'))
-  const changedFiles = event.pull_request?.files || []
+  const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
 
-  return changedFiles.map((file) => file.filename).filter((file) => file.endsWith('.js'))
+
+  const { repository, pull_request } = event;
+
+  console.log("pull_request", pull_request?.files || 'nothing');
+
+
+  // For 'synchronize' events, use the files array directly
+  if (event.action === 'synchronize') {
+    return pull_request.files.map((file) => file.filename).filter((file) => file.endsWith('.js')) || [];
+  }
+
+  // For other PR events, fetch the changed files via the GitHub API
+  const { data: files } = await octokit.rest.pulls.listFiles({
+    owner: repository.owner.login,
+    repo: repository.name,
+    pull_number: pull_request.number,
+  });
+
+
+  return files.map((file) => file.filename).filter((file) => file.endsWith('.js')) || [];
 }
 
+
 // Map source files to test files
-function mapToTestFiles (changedFiles) {
+function mapToTestFiles(changedFiles) {
   const testFiles = []
+  console.log(changedFiles);
   changedFiles.forEach((file) => {
     const testFile = path.resolve(
       path.dirname(new URL(import.meta.url).pathname),
@@ -34,7 +57,7 @@ function mapToTestFiles (changedFiles) {
 }
 
 // Main function
-async function runTests () {
+async function runTests() {
   const changedFiles = getChangedFiles()
   if (changedFiles.length === 0) {
     console.log('No affected files detected.')
