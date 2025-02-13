@@ -1,0 +1,21 @@
+{
+  "name": "poc-test-affected-files",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test:unit:100": "glob -c \"c8 --100 --reporter html --reporter text node --test\" 'test/unit/**/*.js'"
+  },
+  "devDependencies": {
+    "c8": "^10.1.3",
+    "esmock": "^2.7.0",
+    "glob": "^11.0.1",
+    "nodemon": "^3.1.9"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "Mahmoud Mraisi",
+  "license": "MIT"
+}
