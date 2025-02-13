@@ -17,5 +17,8 @@
     "node": ">=20"
   },
   "author": "Mahmoud Mraisi",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@octokit/rest": "^21.1.0"
+  }
 }
